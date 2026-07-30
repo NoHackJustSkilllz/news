@@ -8,7 +8,8 @@ let news = [
     { 
         title: "Добро пожаловать!", 
         date: "30 ИЮЛЯ 2026", 
-        text: "Добро пожаловать в лаунчер VDS Client!" 
+        text: "Добро пожаловать в лаунчер VDS Client!",
+        imageUrl: "" // Ссылка на картинку (если есть)
     }
 ];
 
@@ -29,6 +30,7 @@ app.get('/admin', (req, res) => {
             <h3 style="color:#34D399;">Управление новостями VDS</h3>
             <form action="/admin/add" method="POST">
                 <input type="text" name="title" placeholder="Заголовок новости..." style="width:100%; padding:12px; background:#181824; color:#fff; border-radius:8px; border:1px solid #333; font-size:16px; margin-bottom:12px; box-sizing: border-box;" />
+                <input type="url" name="imageUrl" placeholder="Ссылка на картинку (http/https)..." style="width:100%; padding:12px; background:#181824; color:#fff; border-radius:8px; border:1px solid #333; font-size:16px; margin-bottom:12px; box-sizing: border-box;" />
                 <textarea name="text" placeholder="Текст новости..." style="width:100%; height:120px; background:#181824; color:#fff; padding:12px; border-radius:8px; border:1px solid #333; font-size:16px; box-sizing: border-box; margin-bottom:12px;"></textarea>
                 <button type="submit" style="background:#34D399; color:#121216; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; font-size:16px; width:100%; cursor:pointer;">Опубликовать</button>
             </form>
@@ -41,6 +43,7 @@ app.get('/admin', (req, res) => {
                             <b style="color:#818CF8; font-size:16px;">${item.title}</b>
                             <span style="color:#a1a1aa; font-size:11px;">${item.date}</span>
                         </div>
+                        ${item.imageUrl ? `<img src="${item.imageUrl}" style="width:100%; max-height:180px; object-fit:cover; border-radius:6px; margin-top:8px;" />` : ''}
                         <div style="margin-top:6px; color:#e4e4e7;">${item.text}</div>
                         <form action="/admin/delete/${index}" method="POST" style="margin-top:8px; margin-bottom:0;">
                             <button type="submit" style="background:#f43f5e; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Удалить</button>
@@ -55,14 +58,15 @@ app.get('/admin', (req, res) => {
 
 // Добавление новости из админки
 app.post('/admin/add', (req, res) => {
-    const { title, text } = req.body;
+    const { title, text, imageUrl } = req.body;
     if (text && text.trim() !== '') {
         const date = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
         
         news.unshift({ 
             title: title && title.trim() !== '' ? title.trim() : "Новость", 
             date, 
-            text: text.trim() 
+            text: text.trim(),
+            imageUrl: imageUrl ? imageUrl.trim() : ""
         });
     }
     res.redirect('/admin');
