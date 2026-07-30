@@ -6,16 +6,22 @@ const cookieSession = require('cookie-session');
 const app = express();
 
 // --- НАСТРОЙКИ ---
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "vds2026"; // Пароль для входа в админку
+// Пароль и секрет сессии подтягиваются из Environment Variables на Render
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const SESSION_SECRET = process.env.SESSION_SECRET || 'vds_secure_fallback_key_2026';
 const DATA_FILE = path.join(__dirname, 'news.json');
+
+if (!ADMIN_PASSWORD) {
+    console.warn("⚠️ ВНИМАНИЕ: Переменная ADMIN_PASSWORD не задана в Environment Variables!");
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieSession({
     name: 'vds_session',
-    keys: ['vds_secret_key_98765'],
-    maxAge: 24 * 60 * 60 * 1000 // Сессия на 24 часа
+    keys: [SESSION_SECRET],
+    maxAge: 24 * 60 * 60 * 1000 // Сессия активна 24 часа
 }));
 
 // --- РАБОТА С ФАЙЛОМ (ХРАНЕНИЕ) ---
@@ -73,7 +79,7 @@ app.get('/api/news', (req, res) => {
     const sortedNews = [...news].sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
-        return b.id - a.id;
+        return Number(b.id) - Number(a.id);
     });
     res.json(sortedNews);
 });
@@ -82,7 +88,10 @@ app.get('/api/news', (req, res) => {
 app.get('/admin/login', (req, res) => {
     res.send(`
         <html>
-        <head><title>VDS Admin - Вход</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <head>
+            <title>VDS Admin - Вход</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
         <body style="background:#0b0b10; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0;">
             <form action="/admin/login" method="POST" style="background:#181824; padding:24px; border-radius:12px; border:1px solid #2a2a38; width:100%; max-width:320px;">
                 <h3 style="margin-top:0; color:#818CF8; text-align:center;">VDS Admin Login</h3>
@@ -96,11 +105,12 @@ app.get('/admin/login', (req, res) => {
 
 app.post('/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === ADMIN_PASSWORD) {
+
+    if (ADMIN_PASSWORD && password === ADMIN_PASSWORD) {
         req.session.isAdmin = true;
         res.redirect('/admin');
     } else {
-        res.send("<script>alert('Неверный пароль!'); window.location='/admin/login';</script>");
+        res.send("<script>alert('Неверный пароль или доступ не настроен!'); window.location='/admin/login';</script>");
     }
 });
 
