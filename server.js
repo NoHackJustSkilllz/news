@@ -6,7 +6,6 @@ const cookieSession = require('cookie-session');
 const app = express();
 
 // --- НАСТРОЙКИ ---
-// Пароль и секрет сессии подтягиваются из Environment Variables на Render
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'vds_secure_fallback_key_2026';
 const DATA_FILE = path.join(__dirname, 'news.json');
@@ -23,6 +22,14 @@ app.use(cookieSession({
     keys: [SESSION_SECRET],
     maxAge: 24 * 60 * 60 * 1000 // Сессия активна 24 часа
 }));
+
+// Предустановленные палитры цветов
+const COLOR_PRESETS = [
+    { name: 'Голубой', value: '#818CF8' },
+    { name: 'Красный', value: '#F43F5E' },
+    { name: 'Желтый', value: '#F59E0B' },
+    { name: 'Зеленый', value: '#10B981' }
+];
 
 // --- РАБОТА С ФАЙЛОМ (ХРАНЕНИЕ) ---
 let news = [];
@@ -75,7 +82,6 @@ function requireAuth(req, res, next) {
 
 // --- API ДЛЯ ЛАУНЧЕРА ---
 app.get('/api/news', (req, res) => {
-    // Сортировка: сначала закрепленные, затем свежие по id
     const sortedNews = [...news].sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
@@ -123,6 +129,7 @@ app.get('/admin/logout', (req, res) => {
 app.get('/admin', requireAuth, (req, res) => {
     const editId = req.query.edit;
     const itemToEdit = editId ? news.find(n => n.id === editId) : null;
+    const currentColor = itemToEdit ? itemToEdit.tagColor : '#818CF8';
 
     res.send(`
         <html>
@@ -144,7 +151,11 @@ app.get('/admin', requireAuth, (req, res) => {
                 
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <input type="text" name="tag" value="${itemToEdit ? itemToEdit.tag || '' : 'ОБНОВЛЕНИЕ'}" placeholder="Тег (например: ВАЖНО)" style="flex:2; padding:10px; background:#0b0b10; color:#fff; border-radius:6px; border:1px solid #333; box-sizing:border-box;" />
-                    <input type="color" name="tagColor" value="${itemToEdit ? itemToEdit.tagColor || '#818CF8' : '#818CF8'}" style="flex:1; height:38px; background:#0b0b10; border:1px solid #333; border-radius:6px; cursor:pointer;" />
+                    
+                    <!-- Селектор предустановленных цветов -->
+                    <select name="tagColor" style="flex:1; padding:10px; background:#0b0b10; color:#fff; border-radius:6px; border:1px solid #333; cursor:pointer;">
+                        ${COLOR_PRESETS.map(c => `<option value="${c.value}" ${currentColor === c.value ? 'selected' : ''}>${c.name}</option>`).join('')}
+                    </select>
                 </div>
 
                 <input type="url" name="imageUrl" value="${itemToEdit ? itemToEdit.imageUrl : ''}" placeholder="Ссылка на картинку (http/https)..." style="width:100%; padding:10px; background:#0b0b10; color:#fff; border-radius:6px; border:1px solid #333; margin-bottom:10px; box-sizing:border-box;" />
