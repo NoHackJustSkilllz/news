@@ -5,31 +5,25 @@ CHANNEL_NAME = "emokore4"
 RSS_URL = f"https://t.me/s/{CHANNEL_NAME}"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
 def fetch_posts():
-    print(f"Запрос к {RSS_URL}...")
     response = requests.get(RSS_URL, headers=HEADERS)
-    print(f"Статус ответа: {response.status_code}")
-    
     if response.status_code != 200:
         return []
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    messages = soup.find_all('div', class_='tgme_widget_message')
-    print(f"Найдено сообщений: {len(messages)}")
+    
+    # Telegram хранит тексты постов в блоках с этим классом
+    posts_data = soup.find_all('div', class_='tgme_widget_message_text')
+    dates_data = soup.find_all('time', class_='tgme_widget_message_date')
     
     posts = []
-    for msg in messages:
-        text_el = msg.find('div', class_='tgme_widget_message_text')
-        date_el = msg.find('time', class_='tgme_widget_message_date')
-        
-        if text_el:
-            text = text_el.decode_contents()
-            date = date_el.get_text() if date_el else ""
-            posts.append({"date": date, "text": text})
+    for i in range(len(posts_data)):
+        text = posts_data[i].decode_contents()
+        date = dates_data[i].get_text() if i < len(dates_data) else ""
+        posts.append({"date": date, "text": text})
         
     return posts[-10:][::-1]
 
@@ -76,7 +70,7 @@ def save_html(posts):
 <body>
 """
     if not posts:
-        html += '<div class="news-card"><div class="news-text">Посты не найдены или канал недоступен</div></div>'
+        html += '<div class="news-card"><div class="news-text">Постов пока нет</div></div>'
     
     for p in posts:
         html += f"""
