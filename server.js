@@ -5,7 +5,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 let news = [
-    { date: "30 ИЮЛЯ 2026", text: "Добро пожаловать в лаунчер VDS Client!" }
+    { 
+        title: "Добро пожаловать!", 
+        date: "30 ИЮЛЯ 2026", 
+        text: "Добро пожаловать в лаунчер VDS Client!" 
+    }
 ];
 
 // Чтение новостей лаунчером (возвращает JSON)
@@ -13,7 +17,7 @@ app.get('/api/news', (req, res) => {
     res.json(news);
 });
 
-// Простая админ-панель для управления с телефона
+// Админ-панель
 app.get('/admin', (req, res) => {
     res.send(`
         <html>
@@ -21,16 +25,28 @@ app.get('/admin', (req, res) => {
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>VDS Admin</title>
         </head>
-        <body style="background:#0b0b10; color:#fff; font-family:sans-serif; padding:20px;">
+        <body style="background:#0b0b10; color:#fff; font-family:sans-serif; padding:20px; max-width:600px; margin:0 auto;">
             <h3 style="color:#34D399;">Управление новостями VDS</h3>
             <form action="/admin/add" method="POST">
-                <textarea name="text" placeholder="Текст новости..." style="width:100%; height:140px; background:#181824; color:#fff; padding:12px; border-radius:8px; border:1px solid #333; font-size:16px; box-sizing: border-box;"></textarea><br><br>
+                <input type="text" name="title" placeholder="Заголовок новости..." style="width:100%; padding:12px; background:#181824; color:#fff; border-radius:8px; border:1px solid #333; font-size:16px; margin-bottom:12px; box-sizing: border-box;" />
+                <textarea name="text" placeholder="Текст новости..." style="width:100%; height:120px; background:#181824; color:#fff; padding:12px; border-radius:8px; border:1px solid #333; font-size:16px; box-sizing: border-box; margin-bottom:12px;"></textarea>
                 <button type="submit" style="background:#34D399; color:#121216; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; font-size:16px; width:100%; cursor:pointer;">Опубликовать</button>
             </form>
             <br>
-            <h4 style="margin-top:20px;">Текущие посты:</h4>
-            <div style="background:#181824; padding:12px; border-radius:8px; font-size:13px; line-height:1.5;">
-                ${news.map((item, index) => `<div style="margin-bottom:10px; border-bottom:1px solid #2a2a38; padding-bottom:8px;"><b>[${item.date}]</b><br>${item.text}</div>`).join('')}
+            <h4>Текущие посты:</h4>
+            <div style="background:#181824; padding:12px; border-radius:8px; font-size:14px; line-height:1.5;">
+                ${news.map((item, index) => `
+                    <div style="margin-bottom:12px; border-bottom:1px solid #2a2a38; padding-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <b style="color:#818CF8; font-size:16px;">${item.title}</b>
+                            <span style="color:#a1a1aa; font-size:11px;">${item.date}</span>
+                        </div>
+                        <div style="margin-top:6px; color:#e4e4e7;">${item.text}</div>
+                        <form action="/admin/delete/${index}" method="POST" style="margin-top:8px; margin-bottom:0;">
+                            <button type="submit" style="background:#f43f5e; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Удалить</button>
+                        </form>
+                    </div>
+                `).join('')}
             </div>
         </body>
         </html>
@@ -39,10 +55,24 @@ app.get('/admin', (req, res) => {
 
 // Добавление новости из админки
 app.post('/admin/add', (req, res) => {
-    const text = req.body.text;
+    const { title, text } = req.body;
     if (text && text.trim() !== '') {
         const date = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-        news.unshift({ date, text: text.trim() });
+        
+        news.unshift({ 
+            title: title && title.trim() !== '' ? title.trim() : "Новость", 
+            date, 
+            text: text.trim() 
+        });
+    }
+    res.redirect('/admin');
+});
+
+// Удаление новости
+app.post('/admin/delete/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!isNaN(id) && id >= 0 && id < news.length) {
+        news.splice(id, 1);
     }
     res.redirect('/admin');
 });
